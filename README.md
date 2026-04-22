@@ -11,11 +11,11 @@
 ### 🪟 Para Usuarios de Windows (Recomendado)
 Para disfrutar de la mejor experiencia sin complicaciones:
 1. Ve a la sección de **[Releases](https://github.com/R3apps/TradingR3/releases)** de este repositorio.
-2. Descarga el archivo instalador `TradingR3_Setup.exe`.
-3. Ejecútalo y sigue el asistente de instalación (**Siguiente, Siguiente, Instalar**).
-4. El programa se instalará automáticamente y creará un acceso directo en tu escritorio.
+2. Descarga el archivo comprimido `TradingR3_Portable.zip`.
+3. Descomprime la carpeta en cualquier ubicación (Escritorio, Documentos, etc.).
+4. Ejecuta el archivo `TradingR3.exe` para iniciar la aplicación.
 
-> **Nota**: Durante la instalación, Windows podría mostrar un aviso de "SmartScreen". Haz clic en "Más información" y "Ejecutar de todas formas" para continuar.
+> **Nota**: Al ser una versión portable, todos tus datos (configuración, backtests y dibujos) se guardarán automáticamente dentro de la propia carpeta del programa. No requiere permisos de administrador.
 
 ---
 
