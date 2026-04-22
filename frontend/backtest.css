@@ -1,0 +1,225 @@
+#backtest-replay-bar {
+  position: relative;
+  height: 48px;
+  background: #131722;
+  border-top: 1px solid #2a2e39;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 1000;
+  display: none;
+  flex-shrink: 0;
+}
+
+#replay-timeline {
+  flex: 1;
+  margin: 0 16px;
+  cursor: pointer;
+}
+
+.replay-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bt-btn {
+  background: #1e222d;
+  color: #D9D9D9;
+  border: 1px solid #2a2e39;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.bt-btn:hover {
+  background: #2a2e39;
+  border-color: #363c4e;
+}
+
+.bt-btn.active {
+  background: #2196F3;
+  color: white;
+  border-color: #2196F3;
+}
+
+.speed-btn.active {
+  background: #2196F3;
+  color: white;
+}
+
+#backtest-order-panel {
+  position: absolute;
+  top: 60px;
+  right: 16px;
+  width: 240px;
+  background: #131722;
+  border: 1px solid #2a2e39;
+  border-radius: 6px;
+  display: none;
+  flex-direction: column;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.panel-header {
+  padding: 10px;
+  border-bottom: 1px solid #2a2e39;
+  font-weight: bold;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  cursor: move;
+  user-select: none;
+}
+
+.panel-content {
+  padding: 12px;
+}
+
+.order-group {
+  margin-bottom: 12px;
+}
+
+.order-group label {
+  display: block;
+  font-size: 11px;
+  color: #787B86;
+  margin-bottom: 4px;
+}
+
+.bt-input {
+  width: 100%;
+  background: #1e222d;
+  border: 1px solid #2a2e39;
+  color: #D9D9D9;
+  padding: 6px;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.bt-input:focus {
+  outline: none;
+  border-color: #2196F3;
+}
+
+.btn-buy { background: #26a69a; color: white; width: 100%; border: none; margin-bottom: 8px; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-sell { background: #ef5350; color: white; width: 100%; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+#backtest-history-panel {
+  position: absolute;
+  top: 60px;
+  left: 60px;
+  width: 300px;
+  background: #131722;
+  border: 1px solid #2a2e39;
+  border-radius: 6px;
+  display: none;
+  flex-direction: column;
+  z-index: 100;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.stat-card {
+  background: #1a1e2e;
+  border: 1px solid #2a2e39;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.stat-label { color: #787B86; font-size: 11px; }
+.stat-value { color: #D9D9D9; font-size: 14px; font-weight: 500; }
+
+#bt-trade-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+#bt-trade-history-table th {
+  text-align: left;
+  color: #787B86;
+  padding: 4px;
+  border-bottom: 1px solid #2a2e39;
+}
+
+#bt-trade-history-table td {
+  padding: 4px;
+}
+
+#bt-trade-history-table tr:hover { background: #1e222d; }
+
+.trade-win td:last-child { color: #26a69a; }
+.trade-loss td:last-child { color: #ef5350; }
+
+#bt-open-positions {
+  margin-top: 8px;
+}
+
+.open-pos-item {
+  background: #1e222d;
+  padding: 6px;
+  margin: 4px 0;
+  border-radius: 4px;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pos-buy { border-left: 3px solid #26a69a; }
+.pos-sell { border-left: 3px solid #ef5350; }
+
+#backtest-config-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  display: none;
+}
+
+.modal-content {
+  background: #131722;
+  border: 1px solid #2a2e39;
+  border-radius: 8px;
+  width: 320px;
+  padding: 20px;
+}
+
+.spinner {
+  display: none;
+  border: 3px solid #1e222d;
+  border-top: 3px solid #2196F3;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  margin: 10px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#bt-balance-card {
+  border-bottom: 1px solid #2a2e39;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}

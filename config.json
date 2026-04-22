@@ -1,0 +1,24 @@
+{
+  "oanda": {
+    "api_key": "",
+    "account_id": "",
+    "environment": "practice"
+  },
+  "default_instrument": "GBP_USD",
+  "default_timeframe": "M5",
+  "indicators": {
+    "RSI": {
+      "period": 14,
+      "overbought": 70,
+      "oversold": 30
+    },
+    "STOCH": {
+      "k": 14,
+      "d": 3,
+      "smooth_k": 3,
+      "overbought": 80,
+      "oversold": 20
+    }
+  },
+  "hide_wizard": true
+}
