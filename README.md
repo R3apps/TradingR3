@@ -84,7 +84,7 @@ Las cuentas de Oanda están limitadas para residentes en Europa. Para habilitar 
 
 ## 🗺️ Roadmap — Próximas Mejoras
 
-Queremos que TradingR3 sea la herramienta de backtest gratuita más completa. Estas son las funciones que tenemos en el radar:
+Queremos que TradingR3 sea la herramienta de trading y backtest gratuita más completa. Estas son las funciones que tenemos en el radar:
 
 - [ ] **🌐 Multi Idiomas**: Integración de otros idiomas en la v2 (Próximamente).
 - [ ] **🛠️ Mejorar Herramientas de Dibujo**: Añadir otras herramientas como iman, configuración de las herramientas de dibujo (Parámetros de fibonacci, etc).
