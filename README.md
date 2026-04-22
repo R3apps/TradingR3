@@ -2,7 +2,13 @@
 
 **TradingR3** es una alternativa gratuita para ver tus graficos en tiempo real y realizar backtest. Permite simular el movimiento del mercado vela a vela, aplicar indicadores técnicos y gestionar operaciones de forma visual y analítica, todo bajo una interfaz inspirada en los estándares de la industria.
 
-![TradingR3 Preview](https://via.placeholder.com/800x450?text=TradingR3+Dashboard) 
+<img width="1430" height="898" alt="image" src="https://github.com/user-attachments/assets/fda0bce4-f2d7-468b-9b2f-efc37bf28588" />
+<img width="1919" height="1078" alt="image" src="https://github.com/user-attachments/assets/536e24fd-bbd7-40fc-adc7-866b3823f1e4" />
+<img width="1431" height="895" alt="image" src="https://github.com/user-attachments/assets/03be17c4-a346-4ba8-88aa-be16adbc0496" />
+<img width="1437" height="898" alt="image" src="https://github.com/user-attachments/assets/062865f4-a4d8-4309-96e0-c43da7410643" />
+<img width="1434" height="902" alt="image" src="https://github.com/user-attachments/assets/a8fd0d63-fd55-4a05-ad1b-9cbc72d6f184" />
+<img width="1920" height="1077" alt="image" src="https://github.com/user-attachments/assets/b8ddf369-389f-4b63-99c3-fa6698612eb4" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/13dc0827-ec75-4f0f-855b-11b28530d248" />
 
 ---
 
