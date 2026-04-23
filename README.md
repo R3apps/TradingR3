@@ -63,7 +63,7 @@ Dependiendo de tu región, el acceso a la API de Oanda puede variar. Para garant
 1. Accede al registro aquí: **[OANDA Apply](https://www.oanda.com/apply/select)**.
 2. Selecciona **"Demo Trading Account"**.
 3. En **"Where do you live?"**, selecciona una región compatible con el acceso API Global (ej: regiones fuera de la UE/Andorra).
-4. Rellena tus datos. El teléfono puede llevar tu prefijo real.
+4. Rellena tus datos.
 5. Tras el registro, verás una pantalla de "Thanks...". Haz scroll y entra al **Oanda Hub**.
 
 ### 🔑 Obtención de API Key y Account ID
