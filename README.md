@@ -46,7 +46,14 @@ chmod +x run_app.sh
 
 ---
 
-## ⚙️ Configuración de OANDA
+## 🪙 Criptomonedas (Sin configuración)
+TradingR3 integra la **API pública de Binance** para todos los datos de criptomonedas. 
+- **Plug & Play**: No requiere registro ni introducir API Keys.
+- **Inmediato**: Puedes visualizar gráficos de BTC, ETH, SOL y cientos de pares más nada más iniciar la aplicación.
+
+---
+
+## ⚙️ Configuración de OANDA (Forex y CFD)
 
 Para utilizar el backtest con Forex y otros activos premium, es necesario vincular una cuenta de OANDA. Sigue estos pasos para asegurar la compatibilidad con la API:
 
