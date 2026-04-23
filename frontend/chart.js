@@ -380,7 +380,7 @@ function resetAllCharts() {
     rsiData = [];
     stochKData = [];
     stochDData = [];
-    lastCandleTime = null;
+    window.lastCandleTime = null;
     
     // Limpiar estado de prefetch al cambiar de instrumento/timeframe
     prefetchInFlight = false;
@@ -1067,40 +1067,71 @@ window.removeCountdownPriceLine = removeCountdownPriceLine;
 function updateCandleCountdown() {
   if (isBacktestActive()) {
     removeCountdownPriceLine();
+    if (window.candleSeries) {
+      candleSeries.applyOptions({
+        priceLineVisible: false,
+        lastValueVisible: false,
+        countdownVisible: false
+      });
+    }
     return;
   }
-  
-  // 1. Garantizar sincronización base
-  if (!window.masterClockSync) {
-      window.masterClockSync = { server: Date.now() / 1000, local: performance.now() / 1000 };
-  }
-  
-  if (!currentTimeframe || !candleData.length) return;
-  
-  // 2. Calcular tiempo actual sincronizado
-  const nowLocal = performance.now() / 1000;
-  const nowServer = window.masterClockSync.server + (nowLocal - window.masterClockSync.local);
-  const duration = timeframeToSeconds(currentTimeframe);
-  
-  // 3. Lógica de Módulo (Estándar TradingView)
-  const timeLeft = duration - (nowServer % duration);
-  const displaySeconds = Math.max(0, Math.floor(timeLeft));
 
-  let countdownStr = "";
-  if (displaySeconds >= 3600) {
-      const h = Math.floor(displaySeconds / 3600);
-      const m = Math.floor((displaySeconds % 3600) / 60);
-      const s = displaySeconds % 60;
-      countdownStr = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  } else {
-      const m = Math.floor(displaySeconds / 60);
-      const s = displaySeconds % 60;
-      countdownStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  if (!currentTimeframe || !candleData.length || !window.lastCandleTime) return;
+
+  const duration = timeframeToSeconds(currentTimeframe);
+
+  // Tiempo UTC sincronizado con el servidor
+  if (!window.masterClockSync) {
+    window.masterClockSync = { server: Date.now() / 1000, local: performance.now() / 1000 };
   }
-  
+  const nowLocal = performance.now() / 1000;
+  const nowUTC = window.masterClockSync.server + (nowLocal - window.masterClockSync.local);
+
+  let timeLeft;
+
+  if (duration < 14400) {
+    // M1, M5, M15, M30, H1: OANDA alinea al minuto/hora UTC exacto → módulo directo
+    timeLeft = Math.max(0, duration - (nowUTC % duration) - 1);
+  } else {
+    // H4, D, W: OANDA alinea al ciclo de sesión de Nueva York (17:00 ET).
+    // El lastCandleTime que devuelve OANDA ya embebe ese offset estacional
+    // (p.ej. una vela D empieza a las 21:00 UTC en verano o 22:00 UTC en invierno).
+    // Usamos lastCandleTime como ancla real y calculamos cuántos períodos completos
+    // han transcurrido desde ese ancla hasta ahora → deducimos el fin real de la vela.
+    // Esto es agnóstico al horario de verano/invierno.
+    const anchor = Number(window.lastCandleTime);
+    const elapsed = nowUTC - anchor;
+    const periodsElapsed = Math.floor(elapsed / duration);
+    const endTime = anchor + (periodsElapsed + 1) * duration;
+    timeLeft = Math.max(0, endTime - nowUTC - 1);
+  }
+
+  // Fin de semana: forex no opera sábado y mayor parte del domingo
+  const now = new Date();
+  const day = now.getUTCDay();
+  const hour = now.getUTCHours();
+  const isWeekend = (day === 6) || (day === 0 && hour < 21) || (day === 5 && hour >= 22);
+  if (isWeekend) timeLeft = 0;
+
+  // Formatear el countdown
+  const totalSeconds = Math.floor(timeLeft);
+  let countdownStr = "";
+  if (totalSeconds >= 3600) {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    countdownStr = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  } else {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    countdownStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+
   if (window.currentCountdown !== countdownStr) {
     window.currentCountdown = countdownStr;
   }
+
   // Borrar línea manual antigua si todavía existe por algún motivo
   removeCountdownPriceLine();
 }
