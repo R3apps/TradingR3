@@ -48,15 +48,15 @@ chmod +x run_app.sh
 
 ## ⚙️ Configuración de OANDA
 
-Para utilizar el backtest con Forex y otros activos premium, es necesario crear una cuenta en OANDA. Sigue estos pasos para evitar las restricciones regionales en Europa:
+Para utilizar el backtest con Forex y otros activos premium, es necesario vincular una cuenta de OANDA. Sigue estos pasos para asegurar la compatibilidad con la API:
 
-### 🌍 Creación de Cuenta Demo
-Las cuentas de Oanda están limitadas para residentes en Europa. Para habilitar la API, debemos registrarnos como residentes en **Andorra** o fuera de Europa.
+### 🌍 Registro de Cuenta Demo
+Dependiendo de tu región, el acceso a la API de Oanda puede variar. Para garantizar la funcionalidad total en el entorno de desarrollo:
 
 1. Accede al registro aquí: **[OANDA Apply](https://www.oanda.com/apply/select)**.
 2. Selecciona **"Demo Trading Account"**.
-3. En **"Where do you live?"**, selecciona siempre **Andorra**.
-4. Rellena tus datos. El teléfono debe llevar el prefijo de tu país real (esto no influye en la restricción).
+3. En **"Where do you live?"**, selecciona una región compatible con el acceso API Global (ej: regiones fuera de la UE/Andorra).
+4. Rellena tus datos. El teléfono puede llevar tu prefijo real.
 5. Tras el registro, verás una pantalla de "Thanks...". Haz scroll y entra al **Oanda Hub**.
 
 ### 🔑 Obtención de API Key y Account ID
