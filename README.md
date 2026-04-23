@@ -49,7 +49,7 @@ chmod +x run_app.sh
 ## ⚡ Criptomonedas (Sin configuración)
 TradingR3 integra la **API pública de Binance** para todos los datos de criptomonedas. 
 - **Plug & Play**: No requiere registro ni introducir API Keys.
-- **Inmediato**: Puedes visualizar gráficos de BTC, ETH, SOL y cientos de pares más nada más iniciar la aplicación.
+- **Inmediato**: Puedes visualizar gráficos y hacer backtesting de BTC, ETH, SOL y cientos de pares más nada más iniciar la aplicación.
 
 ---
 
