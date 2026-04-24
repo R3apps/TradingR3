@@ -57,14 +57,13 @@ TradingR3 integra la **API pública de Binance** para todos los datos de criptom
 
 Para utilizar el backtest con Forex y otros activos premium, es necesario vincular una cuenta de OANDA. Sigue estos pasos para asegurar la compatibilidad con la API:
 
-### 🌍 Registro de Cuenta Demo
-Dependiendo de tu región, el acceso a la API de Oanda puede variar. Para garantizar la funcionalidad total en el entorno de desarrollo:
+### 🌍 Registro y Conectividad
+Para acceder a la API de OANDA y obtener datos de Forex/CFDs en el entorno de desarrollo:
 
-1. Accede al registro aquí: **[OANDA Apply](https://www.oanda.com/apply/select)**.
-2. Selecciona **"Demo Trading Account"**.
-3. En **"Where do you live?"**, selecciona una región compatible con el acceso API Global (ej: regiones fuera de la UE/Andorra).
-4. Rellena tus datos.
-5. Tras el registro, verás una pantalla de "Thanks...". Haz scroll y entra al **Oanda Hub**.
+1. Inicia el registro en el portal oficial: **[OANDA Apply](https://www.oanda.com/apply/select)**.
+2. Selecciona **"Demo Trading Account"** para obtener acceso gratuito a datos de prueba.
+3. Sigue los pasos de registro estándar según los términos de servicio de la plataforma (servicio disponible para regiones fuera de la UE y Andorra).
+4. Una vez completado el proceso, accede al **Oanda Hub** para gestionar tu cuenta.
 
 ### 🔑 Obtención de API Key y Account ID
 1. En el Oanda Hub, ve a la pestaña **Trading Tools** > **Oanda API** > **Generate**. Ese es tu Token/API Key.
