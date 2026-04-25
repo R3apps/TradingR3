@@ -6,6 +6,7 @@ import os
 import sys
 import ctypes
 import asyncio
+import webbrowser
 
 import sys
 
@@ -38,7 +39,7 @@ if getattr(sys, 'frozen', False):
 class WindowAPI:
     def __init__(self):
         self.window = None
-        # Inicializados para evitar AttributeError en el .exe
+        # Inicializamos los atributos de arrastre para evitar AttributeError en el .exe
         self.drag_start_mouse_x = 0
         self.drag_start_mouse_y = 0
         self.drag_start_win_x = 0
@@ -136,6 +137,29 @@ if sys.platform == 'win32':
     except:
         pass
 
+def check_dotnet_runtime():
+    """Verifica si .NET Desktop Runtime está disponible, si no, ofrece la descarga."""
+    if sys.platform == 'win32':
+        try:
+            import clr
+            clr.AddReference('System')
+        except Exception as e:
+            # Caja de mensaje nativa (No depende de .NET)
+            msg = "TradingR3 requiere '.NET Desktop Runtime 6.0' (VERSION DESKTOP) para funcionar.\n\n" \
+                  "Es posible que hayas instalado la version 'Console' o 'Runtime' normal, " \
+                  "pero esta aplicacion necesita especificamente la version 'DESKTOP'.\n\n" \
+                  "Tambien asegúrate de tener instalado 'WebView2 Runtime'.\n\n" \
+                  "¿Deseas descargar el instalador correcto ahora?"
+            title = "Componente faltante: .NET Desktop Runtime"
+            # MB_YESNO = 4 | MB_ICONEXCLAMATION = 0x30
+            res = ctypes.windll.user32.MessageBoxW(0, msg, title, 0x04 | 0x30)
+            
+            if res == 6: # IDYES
+                # Link directo a la sección de Desktop Runtime para evitar confusión
+                webbrowser.open("https://dotnet.microsoft.com/download/dotnet/6.0/runtime?utm_source=getdotnet&utm_medium=referral")
+            
+            sys.exit(1)
+
 def setup_app_identity():
     """Obliga a Windows a tratar este proceso como una App única y no como Python"""
     if sys.platform == "win32":
@@ -145,6 +169,8 @@ def setup_app_identity():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
         except:
             pass
+    # Aprovechamos para checkear .NET aquí mismo
+    check_dotnet_runtime()
 
 def force_icon_aggressive(window):
     """Inyecta el icono directamente en el handle de Windows (HWND)"""
@@ -153,7 +179,7 @@ def force_icon_aggressive(window):
         return
 
     # Esperamos un momento para asegurar que el HWND esté registrado en el OS
-    time.sleep(1.0) 
+    time.sleep(0.5) 
 
     if sys.platform == "win32":
         try:
@@ -217,11 +243,32 @@ if __name__ == "__main__":
     )
 
     def on_init(window):
-        # CRÍTICO: set_window PRIMERO para que la API esté disponible de inmediato
+        # CRÍTICO: set_window PRIMERO para que la API esté lista inmediatamente
         api.set_window(window)
-        # Icono en hilo separado para no bloquear la UI
+        # El icono se inyecta en hilo separado para no bloquear la UI
         threading.Thread(target=force_icon_aggressive, args=(window,), daemon=True).start()
 
-    # Debug solo en desarrollo, desactivado automáticamente en el .exe
+    # debug=True solo en desarrollo (sin sys.frozen = no es .exe)
     is_debug = not getattr(sys, 'frozen', False)
-    webview.start(on_init, window, debug=is_debug)
+    
+    try:
+        webview.start(on_init, window, debug=is_debug, gui='edgechromium')
+    except Exception as e:
+        err_msg = str(e).lower()
+        # Caso 1: Falta .NET Desktop Runtime
+        if "python.runtime" in err_msg or "clr" in err_msg:
+            check_dotnet_runtime()
+        # Caso 2: Falta WebView2 Runtime
+        elif "webview2" in err_msg or "edge" in err_msg:
+            msg = "TradingR3 ha detectado que falta 'WebView2 Runtime' en este PC.\n\n" \
+                  "Este componente es necesario para renderizar los graficos.\n\n" \
+                  "¿Deseas descargar el instalador de Microsoft ahora?"
+            title = "Componente faltante: WebView2"
+            res = ctypes.windll.user32.MessageBoxW(0, msg, title, 0x04 | 0x30)
+            if res == 6:
+                webbrowser.open("https://go.microsoft.com/fwlink/p/?LinkId=2124703")
+            sys.exit(1)
+        else:
+            # Error genérico
+            ctypes.windll.user32.MessageBoxW(0, f"Error crítico al iniciar: {str(e)}", "Error de Inicio", 0x10)
+            sys.exit(1)

@@ -12,7 +12,7 @@ const backtestState = {
   selectedTradeId: null,
   isInitialLoad: true,
   globalOffset:       0,      // velas que hay ANTES de la ventana en all_candles
-  hasMoreHistory:     false,  // si el backend tiene velas más antiguas
+  hasMoreHistory:     false,  // si el backend tiene velas mÃ¡s antiguas
   isLoadingHistory:   false,  // anti-duplicado de peticiones
 };
 window.backtestState = backtestState;
@@ -36,7 +36,7 @@ function enterBacktestMode() {
     tabs: JSON.parse(JSON.stringify(window.tabs || []))
   };
 
-  // 2. Aislar interfaz: Mostrar solo la pestaña de Backtest
+  // 2. Aislar interfaz: Mostrar solo la pestaÃ±a de Backtest
   window.tabs = [{
       id: 'backtest-temp-tab',
       symbol: document.getElementById('bt-config-instrument').value || window.currentInstrument,
@@ -93,8 +93,8 @@ function exitBacktestMode() {
   backtestState.isPlaying = false;
   backtestState.openTrades = [];
   backtestState.closedTrades = [];
-  backtestState.isInitialLoad = true; // Reset para la próxima sesión
-  window.backtestActive = false;      // ¡CRUCIAL: Apagar flag global!
+  backtestState.isInitialLoad = true; // Reset para la prÃ³xima sesiÃ³n
+  window.backtestActive = false;      // Â¡CRUCIAL: Apagar flag global!
   
   // Reset drawing reference only (DO NOT wipe objects to prevent accidental deletion)
   if (window.resetDrawingReference) resetDrawingReference();
@@ -132,7 +132,7 @@ function exitBacktestMode() {
   if (window.socket && window.socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({ type: 'backtest_stop' }));
     
-    // RESTAURACIÓN CRUCIAL DE PESTAÑAS
+    // RESTAURACIÃ“N CRUCIAL DE PESTAÃ‘AS
     if (preBacktestState) {
       window.tabs = JSON.parse(JSON.stringify(preBacktestState.tabs));
       window.activeTabId = preBacktestState.tabId;
@@ -142,7 +142,7 @@ function exitBacktestMode() {
       // Limpiar rastro de backtest de la variable preBacktestState
       preBacktestState = null;
 
-      // Forzar reconstrucción de la UI
+      // Forzar reconstrucciÃ³n de la UI
       if (window.renderTabs) renderTabs();
       if (window.updateTimeframeUI) updateTimeframeUI(window.currentTimeframe);
       const instrBtn = document.getElementById('active-instrument-label');
@@ -179,7 +179,6 @@ window.toggleBacktestMode = toggleBacktestMode;
 window.enterBacktestMode = enterBacktestMode;
 window.exitBacktestMode = exitBacktestMode;
 window.handleBacktestLoaded = handleBacktestLoaded;
-window.handleReplayBatch = handleReplayBatch;
 window.handleReplayCandle = handleReplayCandle;
 window.handleBacktestProgress = handleBacktestProgress;
 window.handleBacktestCancelled = handleBacktestCancelled;
@@ -194,13 +193,13 @@ function startBacktest() {
   const from_date = from_date_el ? from_date_el.value : '';
   const balance = parseFloat(document.getElementById('config-balance').value) || 10000;
   
-  // Bloquear inmediatamente cualquier actualización del Live
+  // Bloquear inmediatamente cualquier actualizaciÃ³n del Live
   backtestState.active = true;
   window.backtestActive = true;
 
   if (!from_date) {
     if (window.showNotification) showNotification('Por favor seleccione una fecha de inicio', 'error');
-    // Si falla, restaurar flags (aunque técnicamente estaríamos aún en el modal)
+    // Si falla, restaurar flags (aunque tÃ©cnicamente estarÃ­amos aÃºn en el modal)
     backtestState.active = false;
     window.backtestActive = false;
     return;
@@ -213,7 +212,7 @@ function startBacktest() {
   document.getElementById('bt-loading-percent').textContent = '0%';
   document.getElementById('config-start-btn').disabled = true;
 
-  // LIMPIEZA INMEDIATA DEL GRÁFICO (EVITAR VER EL PRESENTE)
+  // LIMPIEZA INMEDIATA DEL GRÃFICO (EVITAR VER EL PRESENTE)
   if (window.candleSeries) {
     candleSeries.setData([]);
     candleSeries.applyOptions({
@@ -222,7 +221,7 @@ function startBacktest() {
       countdownVisible: false,
       title: ''
     });
-    // Forzar eliminación de líneas de precio manuales (como la de la cuenta atrás)
+    // Forzar eliminaciÃ³n de lÃ­neas de precio manuales (como la de la cuenta atrÃ¡s)
     if (window.removeCountdownPriceLine) window.removeCountdownPriceLine();
   }
   
@@ -300,7 +299,10 @@ function handleBacktestLoaded(msg) {
   document.getElementById('backtest-order-panel').style.display = 'flex';
   document.getElementById('backtest-history-panel').style.display = 'flex';
   
-  // AISLAMIENTO TOTAL: Reemplazar todas las pestañas por una única de backtest
+  // Reset order type to Market by default
+  setOrderType('MARKET');
+  
+  // AISLAMIENTO TOTAL: Reemplazar todas las pestaÃ±as por una Ãºnica de backtest
   window.currentInstrument = msg.instrument;
   window.currentTimeframe = msg.timeframe;
   window.tabs = [{
@@ -319,8 +321,18 @@ function handleBacktestLoaded(msg) {
       window.mainChart.timeScale().scrollToRealTime();
   }
   
+  if (msg.instrument) backtestState.instrument = msg.instrument;
+  if (msg.timeframe || msg.granularity) backtestState.timeframe = msg.timeframe || msg.granularity;
+  if (msg.total_candles || msg.total) backtestState.totalCandles = msg.total_candles || msg.total;
+  if (msg.from_date) backtestState.fromDate = msg.from_date;
+  
+  const inst = msg.instrument || backtestState.instrument || "Inst";
+  const tf = msg.timeframe || msg.granularity || backtestState.timeframe || "TF";
+  const total = msg.total_candles || msg.total || backtestState.totalCandles || 0;
+  const fromD = msg.from_date || backtestState.fromDate || "?";
+  
   document.getElementById('replay-instrument-info').textContent = 
-    `${msg.instrument} ${msg.timeframe} · ${msg.total_candles} velas desde ${msg.from_date}`;
+    `${inst} ${tf} · ${total} velas desde ${fromD}`;
     
   updateTimelineSlider();
 
@@ -363,7 +375,7 @@ function handleBacktestProgress(data) {
     detOverlay.innerText = `${data.count.toLocaleString()} velas recibidas`;
   }
 
-  // 2. Actualizar Modal (Configuración)
+  // 2. Actualizar Modal (ConfiguraciÃ³n)
   const container = document.getElementById('bt-loading-container');
   if (container) container.style.display = 'block';
 
@@ -462,12 +474,12 @@ function handleReplayCandle(msg) {
     } catch(e) { console.warn("Error updating replay candle:", e); }
   }
   
-  // Actualizar estado local (SIEMPRE local al gráfico)
+  // Actualizar estado local (SIEMPRE local al grÃ¡fico)
   const localIdx = msg.current_index - (backtestState.globalOffset || 0);
   backtestState.currentIndex = localIdx;
   backtestState.balance = msg.balance;
   
-  // Auto-desplazar el gráfico si estamos reproduciendo
+  // Auto-desplazar el grÃ¡fico si estamos reproduciendo
   if (backtestState.isPlaying) {
     centerChartOnIndex(msg.current_index);
   }
@@ -479,16 +491,17 @@ function handleReplayCandle(msg) {
       if (closedCount > 0) {
         clearOrderInputs();
         syncTradePriceLines(msg.open_trades);
-        showNotification("Operación cerrada por SL/TP", "info");
+        // La notificación específica la maneja handleTradeClosed para evitar duplicados
       }
       backtestState.openTrades = msg.open_trades;
     } catch(e) { console.warn("Error syncing trades:", e); }
   }
+  
   if (msg.closed_trades) {
-    backtestState.closedTrades = msg.closed_trades;
-    updateTradeHistoryTable();
+    updateBacktestUI(msg.balance, msg.open_trades, msg.closed_trades, msg.stats, msg.pending_trades);
+    return true;
   }
-
+  
   updateOrderPanel();
   updateStatsPanel(msg.stats);
   
@@ -496,253 +509,18 @@ function handleReplayCandle(msg) {
   if (posEl) posEl.innerText = `${msg.current_index + 1} / ${msg.total}`;
 }
 
-// Eliminado handleBacktestLoaded duplicado para evitar conflictos de lógica
+// Eliminado handleBacktestLoaded duplicado para evitar conflictos de lÃ³gica
 
 function handleBacktestCancelled(msg) {
   hideLoadingOverlay();
   showNotification('Carga cancelada', 'info');
 }
 
-function handleReplayBatch(msg) {
-  // Ocultar overlay si el primer batch llega
-  if (typeof hideLoadingOverlay === 'function') hideLoadingOverlay();
-  
-  // ACTIVACIÓN DE ESTADO INMEDIATA (SOLUCIONA BLOQUEO DE PLAY)
-  if (!window.backtestState) window.backtestState = {};
-  backtestState.active = true;
-  window.backtestActive = true;
-  if (window.updateCandleCountdown) window.updateCandleCountdown();
+// â”€â”€ Handlers de Replay (Consolidados al final del archivo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  const validCandles = [];
-  // Soporte para lotes (msg.candles) o vela única (msg.candle)
-  const incoming = msg.candles || (msg.candle ? [msg.candle] : []);
-  
-  if (Array.isArray(incoming)) {
-    for (let i = 0; i < incoming.length; i++) {
-        const c = incoming[i];
-        const t = Math.floor(Number(c.time));
-        if (!isNaN(t) && t > 0) {
-            validCandles.push({
-                time: t,
-                open: Number(c.open),
-                high: Number(c.high),
-                low: Number(c.low),
-                close: Number(c.close),
-                volume: Number(c.volume || 0)
-            });
-        }
-    }
-  }
 
-      // 1. GESTIÓN DE CARGA MASIVA (INICIO O CAMBIO DE TEMPORALIDAD)
-  if (validCandles.length > 50) {
-      // Limpiar price lines de live antes de cargar datos de backtest
-      if (typeof removeCountdownPriceLine === 'function') removeCountdownPriceLine();
-      if (window.countdownPriceLine) {
-          try { candleSeries.removePriceLine(window.countdownPriceLine); } catch(e) {}
-          window.countdownPriceLine = null;
-      }
 
-      // Si es cambio de temporalidad: reset completo igual que sesión nueva
-      if (msg.is_tf_change) {
-          // Eliminar price line del countdown ANTES de limpiar la serie
-          // para evitar que lightweight-charts la restaure al hacer setData
-          if (typeof removeCountdownPriceLine === 'function') removeCountdownPriceLine();
-          if (window.countdownPriceLine) {
-              try { candleSeries.removePriceLine(window.countdownPriceLine); } catch(e) {}
-              window.countdownPriceLine = null;
-          }
-
-          // Limpiar estado de paginación
-          backtestState.globalOffset    = 0;
-          backtestState.hasMoreHistory  = false;
-          backtestState.isLoadingHistory = false;
-          window._btRsiData    = [];
-          window._btStochKData = [];
-          window._btStochDData = [];
-          window.candleData    = [];
-          // Desuscribir listeners del TF anterior
-          if (window._btHistoryScrollUnsub) {
-              try { window._btHistoryScrollUnsub(); } catch(e) {}
-              window._btHistoryScrollUnsub = null;
-          }
-          if (window._backtestSyncUnsub) {
-              try { window._backtestSyncUnsub(); } catch(e) {}
-              window._backtestSyncUnsub = null;
-          }
-          // Limpiar series visuales
-          try { if (window.candleSeries)  candleSeries.setData([]); }  catch(e) {}
-          try { if (window.volumeSeries)  volumeSeries.setData([]); }  catch(e) {}
-          try { if (window.rsiSeries)     rsiSeries.setData([]); }     catch(e) {}
-          try { if (window.stochKSeries)  stochKSeries.setData([]); }  catch(e) {}
-          try { if (window.stochDSeries)  stochDSeries.setData([]); }  catch(e) {}
-      }
-
-      backtestState.allCandles = [...validCandles];
-
-      // El backend ya manda el índice LOCAL correcto dentro de la ventana
-      let focusIndex = msg.current_index || 0;
-      backtestState.globalOffset    = msg.global_offset    || 0;
-      backtestState.hasMoreHistory  = msg.has_more_history || false;
-      backtestState.totalCandles    = msg.total            || validCandles.length;
-      // NO buscar por target_date — el backend ya calculó el índice correcto
-
-      backtestState.currentIndex = focusIndex;
-      
-      // IMPORTANTE: Solo mostramos hasta el focusIndex. El resto es "el futuro"
-      const historyToSet = validCandles.slice(0, focusIndex + 1);
-
-      // Cargar datos en las series y desactivar líneas de precio/etiquetas (limpieza visual total)
-      if (window.candleSeries) {
-          candleSeries.applyOptions({
-              priceLineVisible: false,
-              lastValueVisible: false,
-              title: ''
-          });
-          candleSeries.setData(historyToSet);
-          
-          // AUTO-CENTRADO: Ir a la última vela cargada
-          mainChart.timeScale().scrollToRealTime();
-
-          if (window.updateSeriesPrecision && historyToSet.length > 0) {
-              updateSeriesPrecision(historyToSet[historyToSet.length - 1].close);
-          }
-      }
-      if (window.volumeSeries) {
-          volumeSeries.applyOptions({
-              lastValueVisible: false,
-              priceLineVisible: false
-          });
-          volumeSeries.setData(historyToSet.map(c => ({
-              time: Number(c.time),
-              value: Number(c.volume || 0),
-              color: c.close >= c.open ? '#26a69a80' : '#ef535080'
-          })));
-      }
-
-      // Procesar indicadores con timestamps normalizados
-      const source = msg.all_indicators || msg.indicators || {};
-      const eS2 = (t) => (t > 10000000000 ? Math.floor(t / 1000) : Math.floor(t));
-      const fInd = (arr) => {
-          if (!Array.isArray(arr)) return [];
-          return arr
-              .filter(d => d && d.value != null && isFinite(Number(d.value)))
-              .map(d => ({ time: eS2(Number(d.time)), value: Number(d.value) }))
-              .filter(d => d.time > 0);
-      };
-      window._btRsiData    = fInd(source.rsi    || []);
-      window._btStochKData = fInd(source.stoch_k || []);
-      window._btStochDData = fInd(source.stoch_d || []);
-
-      if (window.rsiSeries    && window._btRsiData.length)    rsiSeries.setData(window._btRsiData);
-      if (window.stochKSeries && window._btStochKData.length)  stochKSeries.setData(window._btStochKData);
-      if (window.stochDSeries && window._btStochDData.length)  stochDSeries.setData(window._btStochDData);
-
-      // Guardar velas en candleData global
-      window.candleData = [...historyToSet];
-
-      // Forzar resize de todos los charts para que ocupen el espacio correcto
-      const forceResize = () => {
-          try {
-              const mainEl  = document.getElementById('main-chart');
-              const rsiEl   = document.getElementById('rsi-chart');
-              const stochEl = document.getElementById('stoch-chart');
-              const w = mainEl ? mainEl.clientWidth : 0;
-              if (w > 0) {
-                  mainChart.resize(w, mainEl.clientHeight || 500);
-                  if (rsiEl && rsiEl.clientHeight > 0)   rsiChart.resize(w, rsiEl.clientHeight);
-                  if (stochEl && stochEl.clientHeight > 0) stochChart.resize(w, stochEl.clientHeight);
-              }
-          } catch(e) {}
-          updateTimelineSlider();
-      };
-      setTimeout(forceResize, 100);
-
-      // Posicionar DESPUÉS del resize (200ms y 600ms como respaldo)
-      syncAndFocusSimulation(focusIndex);
-      initBacktestHistoryScroll();
-      
-  } else if (validCandles.length > 0) {
-      // 2. GESTIÓN DE REPRODUCCIÓN (LOTE PEQUEÑO)
-      const getLastTime = () => {
-          if (window.candleData && window.candleData.length > 0) {
-              return window.candleData[window.candleData.length - 1].time;
-          }
-          return 0;
-      };
-      
-      const lastTime = getLastTime();
-
-      validCandles.forEach(c => {
-          // SOLO ACTUALIZAR SI ES EL PRESENTE O FUTURO
-          if (c.time >= lastTime) {
-              try {
-                  candleSeries.update(c);
-                  if (window.updateSeriesPrecision) updateSeriesPrecision(c.close);
-                  const col = c.close >= c.open ? '#26a69a80' : '#ef535080';
-                  volumeSeries.update({ time: c.time, value: c.volume, color: col });
-                  
-                  if (typeof candleData !== 'undefined') {
-                      const last = candleData.length > 0 ? candleData[candleData.length - 1] : null;
-                      if (last && last.time === c.time) candleData[candleData.length - 1] = { ...c };
-                      else if (!last || c.time > last.time) candleData.push({ ...c });
-                  }
-              } catch(e) {}
-          }
-      });
-      
-      // Actualizar indicadores con el mismo guardián de tiempo
-      if (msg.indicators) {
-          const updateSeries = (series, data) => {
-              if (!series || !data) return;
-              const items = Array.isArray(data) ? data : [data];
-              items.forEach(item => { 
-                  if (item && !isNaN(item.value) && item.time >= lastTime) {
-                      try { series.update(item); } catch(e) {}
-                  }
-              });
-          };
-
-          updateSeries(window.rsiSeries, msg.indicators.rsi);
-          updateSeries(window.stochKSeries, msg.indicators.stoch_k);
-          updateSeries(window.stochDSeries, msg.indicators.stoch_d);
-      }
-      
-      // Refuerzo: Asegurar que el lateral sigue limpio durante el play
-      if (window.candleSeries) {
-          candleSeries.applyOptions({ lastValueVisible: false, priceLineVisible: false, countdownVisible: false });
-      }
-  }
-
-  // Sincronizar trades y balance (Actualización visual de líneas de precio)
-  if (msg.open_trades) {
-      backtestState.openTrades = msg.open_trades;
-      
-      // LIMPIAR Y REDIBUJAR LÍNEAS PARA EVITAR "FANTASMAS" DE ÓRDENES CERRADAS
-      if (typeof clearAllPriceLines === 'function') {
-          clearAllPriceLines();
-          backtestState.openTrades.forEach(t => {
-              if (typeof addPriceLinesForTrade === 'function') addPriceLinesForTrade(t);
-          });
-      }
-      
-      updateOrderPanel();
-  }
-  if (msg.closed_trades) {
-      backtestState.closedTrades = msg.closed_trades;
-      updateTradeHistoryTable();
-  }
-
-  backtestState.currentIndex = msg.current_index;
-  backtestState.balance = msg.balance;
-  
-  // syncAndFocusSimulation ya posiciona correctamente en cambio de TF
-  
-  updateStatsPanel(msg.stats);
-  updateTimelineSlider();
-}
-
-// ── Lazy-scroll history loader ────────────────────────────────────────
+// â”€â”€ Lazy-scroll history loader â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function initBacktestHistoryScroll() {
     if (window._btHistoryScrollUnsub) {
@@ -778,7 +556,7 @@ function initBacktestHistoryScroll() {
     } catch(e) {}
 }
 
-// ── Synchronized chart focus ────────────────────────────────────────
+// â”€â”€ Synchronized chart focus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function syncAndFocusSimulation(focusIndex) {
     if (!window.mainChart) return;
@@ -825,8 +603,8 @@ function syncAndFocusSimulation(focusIndex) {
         } catch(e) {}
     };
 
-    // Múltiples disparos: después del forceResize (100ms), después del backtest_loaded,
-    // y safety nets adicionales para cubrir cualquier auto-fit o resize tardío.
+    // MÃºltiples disparos: despuÃ©s del forceResize (100ms), despuÃ©s del backtest_loaded,
+    // y safety nets adicionales para cubrir cualquier auto-fit o resize tardÃ­o.
     setTimeout(() => applyRange('150ms'),  150);
     setTimeout(() => applyRange('400ms'),  400);
     setTimeout(() => applyRange('900ms'),  900);
@@ -835,7 +613,7 @@ function syncAndFocusSimulation(focusIndex) {
     if (typeof updateTimelineSlider === 'function') updateTimelineSlider();
 }
 
-// ── Historical prepend handler (lazy scroll from backend) ────────────────────
+// â”€â”€ Historical prepend handler (lazy scroll from backend) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function handleBacktestHistoricalPrepend(msg) {
     backtestState.isLoadingHistory = false;
@@ -875,7 +653,7 @@ function handleBacktestHistoricalPrepend(msg) {
     const newStochK = fInd2(msg.indicators?.stoch_k || []);
     const newStochD = fInd2(msg.indicators?.stoch_d || []);
 
-    // Guardar posición visible ANTES del prepend
+    // Guardar posiciÃ³n visible ANTES del prepend
     const visibleRange = mainChart.timeScale().getVisibleLogicalRange();
     const offset       = newCandles.length;
 
@@ -901,13 +679,13 @@ function handleBacktestHistoricalPrepend(msg) {
         } catch(e) { console.warn('[BT-PREPEND]', e); }
 
         Promise.resolve().then(() => {
-            // Restaurar posición: compensar las velas añadidas al inicio
+            // Restaurar posiciÃ³n: compensar las velas aÃ±adidas al inicio
             if (visibleRange) {
                 requestAnimationFrame(() => {
                     try {
                         const nr = { from: visibleRange.from + offset, to: visibleRange.to + offset };
                         mainChart.timeScale().setVisibleLogicalRange(nr);
-                        // chart.js syncCharts propaga a RSI/Stoch automáticamente
+                        // chart.js syncCharts propaga a RSI/Stoch automÃ¡ticamente
                     } catch(e) {}
                 });
             }
@@ -986,11 +764,11 @@ function handleTradeClosed(msg) {
   if (window.showNotification) {
       const sym = (msg.trade.instrument || 'TRADE').replace('_', '/');
       if (msg.type === 'trade_sl_hit') {
-          showNotification(`🛑 Operación cerrada en Stop Loss (${sym})`, 'error');
+          showNotification(`ðŸ›‘ OperaciÃ³n cerrada en Stop Loss (${sym})`, 'error');
       } else if (msg.type === 'trade_tp_hit') {
-          showNotification(`✅ ¡Operación cerrada en Take Profit! (${sym})`, 'success');
+          showNotification(`âœ… Â¡OperaciÃ³n cerrada en Take Profit! (${sym})`, 'success');
       } else if (msg.type === 'trade_closed') {
-          showNotification(`📦 Operación cerrada manualmente (${sym})`, 'info');
+          showNotification(`ðŸ“¦ OperaciÃ³n cerrada manualmente (${sym})`, 'info');
       }
   }
 }
@@ -1055,41 +833,24 @@ function syncTradePriceLines(activeTrades) {
 }
 
 function centerChartOnIndex(globalIndex) {
-  if (!window.mainChart) return;
+  if (!window.mainChart || !window.candleSeries) return;
+  const timeScale = mainChart.timeScale();
   
   const offset = backtestState.globalOffset || 0;
   const localIndex = globalIndex - offset;
   
-  const timeScale = mainChart.timeScale();
-  const visibleRange = timeScale.getVisibleLogicalRange();
-  if (!visibleRange) return;
+  const count = window.candleData ? window.candleData.length : 0;
   
-  const width = visibleRange.to - visibleRange.from;
-  // Si el ancho es absurdo (p.ej. por carga inicial), usar un valor por defecto de 120 velas
-  const safeWidth = (width > 5 && width < 2000) ? width : 120;
-  
-  // Para que el usuario vea un poco del "futuro" y la vela no esté pegada al borde derecho:
-  // Colocamos el localIndex al 70% del ancho visible (30% de espacio a la derecha)
-  const leftBars  = Math.floor(safeWidth * 0.7);
-  const rightBars = safeWidth - leftBars;
-  
-  /*
-  console.log('[BT-CENTER]', { 
-    globalIndex, 
-    offset, 
-    localIndex, 
-    width: safeWidth,
-    range: { from: localIndex - leftBars, to: localIndex + rightBars }
-  });
-  */
-  
+  // Usar rango desplazado a la izquierda para ver más el futuro
+  const leftBars = 80;
+  const rightBars = 120;
+
   timeScale.setVisibleLogicalRange({
     from: localIndex - leftBars,
     to: localIndex + rightBars
   });
 }
 
-// Eliminar referencia a slider que ya no existe
 function updateTimelineSlider() {
   const posEl = document.getElementById('replay-position');
   if (posEl && backtestState.totalCandles) {
@@ -1097,20 +858,142 @@ function updateTimelineSlider() {
   }
 }
 
-function updateOrderPanel() {
-  const balance = (typeof backtestState.balance === 'number') ? backtestState.balance : (backtestState.initialBalance || 0);
-  document.getElementById('bt-balance').textContent = '$' + balance.toFixed(2);
+function updateBacktestUI(balance, open_trades, closed_trades, stats, pending_trades) {
+  if (balance !== null) {
+    const balEl = document.getElementById('bt-balance');
+    if (balEl) balEl.textContent = `$${parseFloat(balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  if (stats) {
+    updateStatsPanel(stats);
+  }
+
+  if (open_trades) {
+    backtestState.openTrades = open_trades;
+    renderOpenPositions();
+  }
+
+  if (pending_trades) {
+    backtestState.pendingTrades = pending_trades;
+    renderPendingOrders(pending_trades);
+  }
+
+  if (closed_trades) {
+    backtestState.closedTrades = closed_trades;
+    updateTradeHistoryTable();
+  }
+
+  // Sincronizar lÃ­neas de precio visuales
+  syncTradePriceLines();
+}
+
+// --- Price Lines for Trades ---
+
+function drawTradePriceLines(trade) {
+  if (!window.candleSeries) return;
   
-  // Open PnL
-  let openPnl = 0;
-  if (backtestState.openTrades.length > 0) {
-    const lastPrice = candleData.length > 0 ? candleData[candleData.length - 1].close : 0;
-    // Note: Actually, in backtest mode, the last price is the current replay candle's close
-    // but the engine handles the calculation in get_statistics.
-    // For local display, we'll wait for stats update or do a simple calculation if possible.
+  if (backtestState.tradePriceLines[trade.id]) {
+    clearTradePriceLines(trade.id);
   }
   
-  renderOpenPositions();
+  const lines = {};
+  const colorEntry = '#D1D4DC';
+  const colorSL = '#ef5350';
+  const colorTP = '#26a69a';
+
+  lines.entry = candleSeries.createPriceLine({
+    price: trade.entry_price,
+    color: colorEntry,
+    lineWidth: 1,
+    lineStyle: 2, // Dashed
+    axisLabelVisible: true,
+    title: `${trade.status === 'pending' ? 'LIMIT' : 'OPEN'} ${trade.direction}`,
+  });
+
+  if (trade.stop_loss) {
+    lines.sl = candleSeries.createPriceLine({
+      price: trade.stop_loss,
+      color: colorSL,
+      lineWidth: 1,
+      lineStyle: 2,
+      axisLabelVisible: true,
+      title: 'SL',
+    });
+  }
+
+  if (trade.take_profit) {
+    lines.tp = candleSeries.createPriceLine({
+      price: trade.take_profit,
+      color: colorTP,
+      lineWidth: 1,
+      lineStyle: 2,
+      axisLabelVisible: true,
+      title: 'TP',
+    });
+  }
+
+  backtestState.tradePriceLines[trade.id] = lines;
+}
+
+function clearTradePriceLines(tradeId) {
+  if (!window.candleSeries || !backtestState.tradePriceLines[tradeId]) return;
+  
+  const lines = backtestState.tradePriceLines[tradeId];
+  if (lines.entry) try { candleSeries.removePriceLine(lines.entry); } catch(e) {}
+  if (lines.sl) try { candleSeries.removePriceLine(lines.sl); } catch(e) {}
+  if (lines.tp) try { candleSeries.removePriceLine(lines.tp); } catch(e) {}
+  
+  delete backtestState.tradePriceLines[tradeId];
+}
+
+function clearAllPriceLines() {
+  if (!window.candleSeries) return;
+  for (const tradeId in backtestState.tradePriceLines) {
+    clearTradePriceLines(tradeId);
+  }
+  backtestState.tradePriceLines = {};
+}
+
+function syncTradePriceLines() {
+  if (!window.candleSeries) return;
+  
+  const activeTradeIds = new Set();
+  const allActiveTrades = [...(backtestState.openTrades || []), ...(backtestState.pendingTrades || [])];
+  
+  allActiveTrades.forEach(trade => {
+    activeTradeIds.add(trade.id);
+    drawTradePriceLines(trade);
+  });
+  
+  for (const tradeId in backtestState.tradePriceLines) {
+    if (!activeTradeIds.has(tradeId)) {
+      clearTradePriceLines(tradeId);
+    }
+  }
+}
+
+function renderPendingOrders(pending) {
+    const container = document.getElementById('pending-orders-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (!pending || pending.length === 0) {
+        container.innerHTML = '<div style="font-size:10px; color:#434651; text-align:center; padding:10px;">Sin Ã³rdenes pendientes</div>';
+        return;
+    }
+
+    pending.forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'pending-order-item';
+        item.innerHTML = `
+            <div style="display:flex; flex-direction:column;">
+                <span style="font-weight:bold; color:${t.direction === 'BUY' ? '#26a69a' : '#ef5350'}">${t.direction}</span>
+                <span style="color:#787B86; font-size:9px;">@ ${t.entry_price.toFixed(5)}</span>
+            </div>
+            <button class="cancel-pending-btn" onclick="cancelPendingTrade('${t.id}')" title="Cancelar">&times;</button>
+        `;
+        container.appendChild(item);
+    });
 }
 
 function renderOpenPositions() {
@@ -1153,7 +1036,7 @@ function updateTradeHistoryTable() {
 function updateStatsPanel(stats) {
   if (!stats) return;
   
-  // 1. Panel de Estadísticas General
+  // 1. Panel de EstadÃ­sticas General
   const mappings = {
     'bt-win-rate': ((stats.win_rate || 0) * 100).toFixed(1) + '%',
     'bt-profit-factor': (stats.profit_factor || 0).toFixed(2),
@@ -1198,27 +1081,32 @@ function updateOrderPanel() {
 
 function calculateLotsFromRisk() {
   const riskPerc = parseFloat(document.getElementById('bt-risk-percent').value) || 0;
-  const entry = parseFloat(document.getElementById('bt-entry-price').value) || 0;
+  let entry = parseFloat(document.getElementById('bt-entry-price').value) || 0;
   const sl = parseFloat(document.getElementById('bt-sl').value) || 0;
+  
+  // Si estamos en MARKET, calculamos la distancia usando el precio actual
+  if (window.backtestOrderType !== 'LIMIT' && window.candleData && window.candleData.length > 0) {
+    entry = window.candleData[window.candleData.length - 1].close;
+  }
   
   if (riskPerc <= 0 || entry <= 0 || sl <= 0 || entry === sl) return 0.01;
 
   const riskAmount = backtestState.balance * (riskPerc / 100);
   const distance = Math.abs(entry - sl);
   
-  // Evitar división por cero si la distancia es extremadamente pequeña
+  // Evitar divisiÃ³n por cero si la distancia es extremadamente pequeÃ±a
   if (distance < 0.00000001) return 0.01;
   
-  // Determinamos el factor según el instrumento
+  // Determinamos el factor segÃºn el instrumento
   const isForex = (currentInstrument.includes('_') && 
                   ['EUR','GBP','JPY','AUD','NZD','CAD','CHF'].some(p => currentInstrument.includes(p)));
   
-  // Factor 100,000 para Forex (estándar Oanda), 1.0 para BTC/Índices
+  // Factor 100,000 para Forex (estÃ¡ndar Oanda), 1.0 para BTC/Ãndices
   const factor = isForex ? 100000 : 1.0;
   
   let lots = riskAmount / (distance * factor);
   
-  // Redondeo lógico: 2 decimales para lotes
+  // Redondeo lÃ³gico: 2 decimales para lotes
   lots = Math.max(0.01, Math.round(lots * 100) / 100);
   
   return lots;
@@ -1234,6 +1122,9 @@ function syncBacktestWithDrawing(obj) {
   const tp = obj.points[1].price;
   const sl = obj.points[2]?.price ?? (entry - (tp - entry));
 
+  // Cambiar automÃ¡ticamente a modo LÃMITE al ajustar un dibujo de posiciÃ³n
+  setOrderType('LIMIT');
+
   const entryInp = document.getElementById('bt-entry-price');
   const slInp = document.getElementById('bt-sl');
   const tpInp = document.getElementById('bt-tp');
@@ -1244,6 +1135,25 @@ function syncBacktestWithDrawing(obj) {
   
   // Auto-calcular lotes si tenemos riesgo definido
   calculateLotsFromRisk();
+}
+
+function setOrderType(type) {
+    window.backtestOrderType = type;
+    const marketBtn = document.getElementById('btn-market-order');
+    const limitBtn = document.getElementById('btn-limit-order');
+    const entryGroup = document.getElementById('entry-price-group');
+
+    if (type === 'MARKET') {
+        marketBtn?.classList.add('active');
+        limitBtn?.classList.remove('active');
+        if (entryGroup) entryGroup.style.display = 'none';
+        const entryInp = document.getElementById('bt-entry-price');
+        if (entryInp) entryInp.value = '';
+    } else {
+        marketBtn?.classList.remove('active');
+        limitBtn?.classList.add('active');
+        if (entryGroup) entryGroup.style.display = 'block';
+    }
 }
 window.syncBacktestWithDrawing = syncBacktestWithDrawing;
 
@@ -1282,7 +1192,7 @@ function makeDraggable(elmnt) {
 
   function dragMouseDown(e) {
     e = e || window.event;
-    // No draguear si se hace click en un botón dentro del header
+    // No draguear si se hace click en un botÃ³n dentro del header
     if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
     
     e.preventDefault();
@@ -1302,7 +1212,7 @@ function makeDraggable(elmnt) {
     
     elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
     elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-    elmnt.style.right = 'auto'; // Importante para que no se estire si tenía fixed right
+    elmnt.style.right = 'auto'; // Importante para que no se estire si tenÃ­a fixed right
   }
 
   function closeDragElement() {
@@ -1311,30 +1221,28 @@ function makeDraggable(elmnt) {
   }
 }
 
-function clearOrderInputs() {
-  const sl = document.getElementById('bt-sl');
-  const tp = document.getElementById('bt-tp');
-  const ent = document.getElementById('bt-entry-price');
-  if (sl) sl.value = '';
-  if (tp) tp.value = '';
-  if (ent) ent.value = '';
-}
-
 function openTrade(direction) {
-  const riskPercent = parseFloat(document.getElementById('bt-risk-percent').value) || 1.0;
-  const lotSize = calculateLotsFromRisk() || 0.01;
-  const entry = parseFloat(document.getElementById('bt-entry-price').value) || null;
-  const sl = parseFloat(document.getElementById('bt-sl').value) || null;
-  const tp = parseFloat(document.getElementById('bt-tp').value) || null;
+  if (!backtestState.active) return;
+  
+  const entryInp = document.getElementById('bt-entry-price');
+  const slInp = document.getElementById('bt-sl');
+  const tpInp = document.getElementById('bt-tp');
+  const riskInp = document.getElementById('bt-risk-percent');
+  
+  // Si estamos en modo MARKET, ignoramos el input de precio
+  const entry = (window.backtestOrderType === 'LIMIT') ? parseFloat(entryInp.value) : null;
+  const sl = parseFloat(slInp.value);
+  const tp = parseFloat(tpInp.value);
+  const risk = parseFloat(riskInp.value) || 0;
   
   socket.send(JSON.stringify({ 
     type: 'trade_open', 
     direction, 
-    lot_size: lotSize, 
-    risk_percent: riskPercent,
+    lot_size: calculateLotsFromRisk() || 0.01,
+    risk_percent: risk,
     entry_price: entry,
-    stop_loss: sl, 
-    take_profit: tp 
+    stop_loss: isNaN(sl) ? null : sl, 
+    take_profit: isNaN(tp) ? null : tp 
   }));
 }
 
@@ -1345,7 +1253,7 @@ function closeTrade(tradeId) {
   }));
 }
 
-// ── Session Management ──────────────────────────────────────────────
+// â”€â”€ Session Management â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function requestSessionsList() {
   if (socket && socket.readyState === WebSocket.OPEN) {
@@ -1370,7 +1278,7 @@ function handleSessionsList(sessions) {
       const card = document.createElement('div');
       card.className = 'session-card';
       card.onclick = (e) => {
-        // Evitar cargar si se hace clic en el botón de borrar
+        // Evitar cargar si se hace clic en el botÃ³n de borrar
         if (e.target.closest('.btn-delete-session-x')) return;
         loadSession(s.filename);
       };
@@ -1416,7 +1324,7 @@ function loadSession(filename) {
     socket.send(JSON.stringify({ type: 'backtest_load', filename }));
     document.getElementById('sessions-modal').style.display = 'none';
     
-    // Desbloquear después de un tiempo prudencial para permitir cambios normales posteriores
+    // Desbloquear despuÃ©s de un tiempo prudencial para permitir cambios normales posteriores
     setTimeout(() => {
         if (typeof backtestState !== 'undefined') backtestState.loadingSession = false;
     }, 2000);
@@ -1445,282 +1353,14 @@ function deleteSession(filename) {
 }
 
 
-function handleBacktestSessionLoaded(msg) {
-  console.log("Session loaded successfully:", msg.instrument);
-  
-  // Ocultar modales
-  const configModal = document.getElementById('backtest-config-modal');
-  if (configModal) configModal.style.display = 'none';
-  
-  // Restaurar estado
-  backtestState.active = true;
-  window.backtestActive = true;
-  if (window.updateCandleCountdown) window.updateCandleCountdown();
-  
-  // Visual lockdown inmediato para evitar parpadeos live
-  if (window.candleSeries) {
-    candleSeries.applyOptions({
-        priceLineVisible: false,
-        lastValueVisible: false,
-        countdownVisible: false,
-        title: ''
-    });
-  }
-  if (window.mainChart) {
-    mainChart.applyOptions({
-      priceScale: { lastValueVisible: false },
-      rightPriceScale: { lastValueVisible: false }
-    });
-  }
-  
-  backtestState.totalCandles = msg.total;
-  backtestState.currentIndex = msg.current_index;
-  backtestState.balance = msg.balance;
-  backtestState.openTrades = msg.open_trades || [];
-  backtestState.closedTrades = msg.closed_trades || [];
-  
-  if (window.updateCandleCountdown) window.updateCandleCountdown();
-  
-  // Reforzar visual lockdown inmediatamente
-  if (window.candleSeries) {
-    candleSeries.applyOptions({
-      priceLineVisible: false,
-      lastValueVisible: false,
-      countdownVisible: false,
-      title: ''
-    });
-  }
-  
-  // 3. Limpiar datos previos del gráfico para evitar "contaminación" de fechas live
-  if (window.candleSeries) candleSeries.setData([]);
-  if (window.rsiSeries) rsiSeries.setData([]);
-  if (window.stochKSeries) stochKSeries.setData([]);
-  if (window.stochDSeries) stochDSeries.setData([]);
-  if (window.volumeSeries) volumeSeries.setData([]);
-
-  // RESETEAR VISTA: Asegurar que no hay rangos previos guardados
-  if (window.mainChart) {
-      mainChart.timeScale().scrollToPosition(0, false);
-  }
-  
-  // Sincronizar UI Principal
-  const sessionPriceUI = document.getElementById('price-display');
-  if (sessionPriceUI) sessionPriceUI.style.display = 'none';
-  
-  const sessReplayBar = document.getElementById('backtest-replay-bar');
-  if (sessReplayBar) sessReplayBar.style.display = 'flex';
-  
-  const sessOrderPanel = document.getElementById('backtest-order-panel');
-  if (sessOrderPanel) sessOrderPanel.style.display = 'flex';
-  
-  const sessHistoryPanel = document.getElementById('backtest-history-panel');
-  if (sessHistoryPanel) sessHistoryPanel.style.display = 'flex';
-  
-  const sessBtBtn = document.getElementById('btn-backtest');
-  if (sessBtBtn) {
-    sessBtBtn.textContent = 'EXIT BACKTEST';
-    sessBtBtn.style.color = '#ef5350';
-  }
-
-
-  // 1. CAPTURAR ESTADO LIVE PARA AISLAMIENTO (Igual que en un backtest nuevo)
-  if (!preBacktestState && !window.backtestActive) {
-      preBacktestState = {
-          tabs: JSON.parse(JSON.stringify(window.tabs)),
-          tabId: window.activeTabId,
-          symbol: window.currentInstrument,
-          timeframe: window.currentTimeframe
-      };
-  }
-
-  // Sincronizar instrumentos
-  window.currentInstrument = msg.instrument;
-  window.currentTimeframe = msg.granularity;
-
-  // AISLAMIENTO TOTAL: Reemplazar pestañas por la del backtest recuperado
-  window.tabs = [{
-      id: 'backtest-temp-tab',
-      symbol: msg.instrument,
-      timeframe: msg.granularity
-  }];
-  window.activeTabId = 'backtest-temp-tab';
-
-  // Forzar actualización de UI
-  if (typeof updateTimeframeUI === 'function') updateTimeframeUI(msg.granularity);
-  if (typeof renderTabs === 'function') renderTabs();
-  
-  const instrLabel = document.getElementById('active-instrument-label');
-  if (instrLabel) instrLabel.textContent = msg.instrument.replace('_', '/');
-
-  // Mostrar paneles de backtest
-  document.getElementById('backtest-replay-bar').style.display = 'flex';
-  document.getElementById('backtest-order-panel').style.display = 'flex';
-  document.getElementById('backtest-history-panel').style.display = 'flex';
-  if (sessionPriceUI) sessionPriceUI.style.display = 'flex';
-
-  window.backtestActive = true;
-  backtestState.active = true;
-  backtestState.instrument = msg.instrument;
-  backtestState.timeframe = msg.granularity;
-
-  
-  // Actualizar gráficas (Fase A: Datos)
-  const currentIndex = msg.current_index || 0;
-  
-  if (msg.candles) {
-    const allCandles = msg.candles.map(c => ({
-      time: Number(c.time), 
-      open: Number(c.open),
-      high: Number(c.high),
-      low: Number(c.low),
-      close: Number(c.close),
-      volume: Number(c.volume || c.v || 0)
-    }));
-    
-    backtestState.allCandles = [...allCandles];
-    const historyCandles = allCandles.slice(0, currentIndex + 1);
-    
-    if (window.candleSeries) {
-      candleSeries.setData(historyCandles);
-      // FORZAR DESACTIVACIÓN DE TODO LO VISIBLE EN EL LATERAL
-      candleSeries.applyOptions({
-          priceLineVisible: false,
-          lastValueVisible: false,
-          countdownVisible: false,
-          title: ''
-      });
-    }
-    
-    if (window.volumeSeries && historyCandles.length > 0) {
-      volumeSeries.setData(historyCandles.map(c => ({
-        time: c.time,
-        value: Number(c.volume || 0), 
-        color: c.close >= c.open ? '#26a69a80' : '#ef535080'
-      })));
-      
-      // Auto-foco tras cargar sesión
-      if (window.mainChart) window.mainChart.timeScale().scrollToRealTime();
-      volumeSeries.applyOptions({
-          lastValueVisible: false,
-          priceLineVisible: false
-      });
-    }
-    
-    // Refuerzo tras setData
-    if (window.candleSeries) {
-      candleSeries.applyOptions({
-          priceLineVisible: false,
-          lastValueVisible: false,
-          countdownVisible: false,
-          title: ''
-      });
-    }
-    
-    window.candleData = [...historyCandles];
-    
-    updateTimelineSlider();
-    window.dispatchEvent(new Event('resize'));
-    if (typeof hideLoadingOverlay === 'function') hideLoadingOverlay();
-    
-    // Forzar foco final
-    setTimeout(() => {
-        if (window.mainChart) window.mainChart.timeScale().scrollToRealTime();
-    }, 100);
-  }
-
-  // CARGAR INDICADORES (Solo hasta el punto actual)
-  if (msg.all_indicators) {
-      const filterInd = (arr) => (Array.isArray(arr) ? arr.slice(0, currentIndex + 1) : []);
-      if (window.rsiSeries && msg.all_indicators.rsi) window.rsiSeries.setData(filterInd(msg.all_indicators.rsi));
-      if (window.stochKSeries && msg.all_indicators.stoch_k) window.stochKSeries.setData(filterInd(msg.all_indicators.stoch_k));
-      if (window.stochDSeries && msg.all_indicators.stoch_d) window.stochDSeries.setData(filterInd(msg.all_indicators.stoch_d));
-  }
-
-  // Fase B: Asegurar que las opciones se mantienen tras el renderizado inicial (Refuerzo Visual TOTAL)
-  setTimeout(() => {
-    if (window.mainChart) {
-        // SILENCIAR LA ESCALA COMPLETA DESDE LA RAÍZ
-        mainChart.priceScale('right').applyOptions({
-            borderVisible: false,
-            visible: true,
-            entireTextOnly: false,
-            alignLabels: false // Evitar que se amontonen las etiquetas
-        });
-
-        // Configuración global del gráfico para ignorar valores de último precio
-        mainChart.applyOptions({
-            priceScale: {
-                lastValueVisible: false
-            }
-        });
-    }
-
-    if (window.candleSeries) {
-        candleSeries.applyOptions({ 
-            priceLineVisible: false, 
-            lastValueVisible: false, 
-            countdownVisible: false,
-            priceLineSource: 1
-        });
-    }
-
-    if (window.volumeSeries) {
-        volumeSeries.applyOptions({ 
-            priceLineVisible: false, 
-            lastValueVisible: false 
-        });
-    }
-    
-    // AÑADIR UN PASO EXTRA: Si hay subscripciones live, silenciarlas
-    if (typeof syncIndicatorStatus === 'function') syncIndicatorStatus();
-  }, 400);
-
-  // FORZAR CIERRE DE PANELES PARA COHERENCIA (NADA DE INDICADORES AUTOMÁTICOS)
-  if (document.getElementById('rsi-container')) document.getElementById('rsi-container').style.display = 'none';
-  if (document.getElementById('stoch-container')) document.getElementById('stoch-container').style.display = 'none';
-  
-  // Sincronizar UI y forzar un refresco interno de los charts de indicadores
-  setTimeout(() => {
-    if (typeof syncIndicatorStatus === 'function') syncIndicatorStatus();
-    if (window.rsiChart) rsiChart.timeScale().fitContent();
-    if (window.stochChart) stochChart.timeScale().fitContent();
-  }, 500);
-
-  // Pequeño delay para dejar que Lightweight Charts procese setData internamente (Fase B: UI)
-  setTimeout(() => {
-    // Restaurar dibujos si existen
-    if (msg.drawings && typeof drawingState !== 'undefined') {
-      drawingState.objects = msg.drawings || [];
-      drawingState.activeObjId = null;
-      drawingState.hoveredObjId = null;
-      
-      if (window.updateObjectTree) window.updateObjectTree();
-      if (window.redrawCanvas) window.redrawCanvas();
-    }
-    
-    // Forzar el centrado del gráfico en el índice donde se guardó la sesión
-    centerChartOnIndex(msg.current_index);
-    
-    // Limpiar y restaurar líneas de precio
-    clearAllPriceLines();
-    backtestState.openTrades.forEach(t => addPriceLinesForTrade(t));
-    
-    // Actualizar paneles estadísticos
-    updateOrderPanel();
-    updateTradeHistoryTable();
-    updateStatsPanel(msg.stats);
-    updateTimelineSlider();
-    
-    showNotification('Sesión restaurada correctamente', 'success');
-  }, 150); 
-}
+// â”€â”€ Fin de Handlers de Carga â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 function replayPlay() {
   backtestState.isPlaying = true;
   document.getElementById('replay-play-btn').style.display = 'none';
   document.getElementById('replay-pause-btn').style.display = 'flex';
-  centerChartOnIndex(backtestState.currentIndex);
+  // El reposicionamiento ocurrirÃ¡ cuando llegue el primer batch de datos o vela
   socket.send(JSON.stringify({ 
     type: 'replay_play', 
     speed: backtestState.speed || 1 
@@ -1801,3 +1441,189 @@ function exportBacktest() {
     }
   }, 500);
 })();
+
+// --- GLOBALS EXPOSURE (Sincronizados con backtest_events.js) ---
+
+window.handleTradeOpened = function(data) {
+    if (window.showNotification) showNotification(`Orden ${data.trade.status === 'pending' ? 'Pendiente' : 'Abierta'}: ${data.trade.direction} @ ${data.trade.entry_price}`, 'success');
+    updateBacktestUI(data.balance, data.open_trades, data.closed_trades, data.stats, data.pending_trades);
+};
+
+window.handleTradeCancelled = function(data) {
+    if (window.showNotification) showNotification(`Orden pendiente cancelada`, 'info');
+    updateBacktestUI(null, null, null, null, data.pending_trades);
+};
+
+window.handleTradeClosed = function(data) {
+    const type = data.type;
+    let msg = "Operación Cerrada";
+    if (type === 'trade_sl_hit') msg = "❌ Operacion SL";
+    if (type === 'trade_tp_hit') msg = "✅ Operacion TP";
+    
+    if (window.showNotification) showNotification(msg, type === 'trade_tp_hit' ? 'success' : 'error');
+    updateBacktestUI(data.balance, data.open_trades, data.closed_trades, data.stats, data.pending_trades);
+};
+
+window.handleReplayBatch = function(data) {
+    if (data.candles) {
+        // Si el lote es pequeño (reproducción rápida), lo procesamos como actualizaciones individuales
+        // Si el lote es grande (> 50 velas), es una carga masiva/salto y usamos setData
+        if (data.candles.length > 50) {
+            handleBacktestLoadedSession(data, false);
+        } else {
+            data.candles.forEach(c => {
+                const subMsg = { ...data, candle: c, candles: null };
+                
+                // Extraer indicadores específicos para esta vela (si vienen en array)
+                if (data.indicators && Array.isArray(data.indicators.rsi)) {
+                    subMsg.indicators = {
+                        rsi: data.indicators.rsi.find(x => x.time === c.time),
+                        stoch_k: data.indicators.stoch_k ? data.indicators.stoch_k.find(x => x.time === c.time) : null,
+                        stoch_d: data.indicators.stoch_d ? data.indicators.stoch_d.find(x => x.time === c.time) : null
+                    };
+                }
+                
+                handleReplayCandle(subMsg);
+            });
+        }
+    } else if (data.candle) {
+        handleReplayCandle(data);
+    }
+};
+
+window.handleReplayRewind = function(data) {
+    handleBacktestLoadedSession(data, true);
+};
+
+window.handleBacktestSessionLoaded = function(data) {
+    handleBacktestLoadedSession(data, true);
+};
+
+function handleBacktestLoadedSession(data, isInitial = false) {
+    if (isInitial) {
+        const configModal = document.getElementById('backtest-config-modal');
+        if (configModal) configModal.style.display = 'none';
+        
+        backtestState.active = true;
+        window.backtestActive = true;
+        
+        document.getElementById('backtest-replay-bar').style.display = 'flex';
+        document.getElementById('backtest-order-panel').style.display = 'flex';
+        document.getElementById('backtest-history-panel').style.display = 'flex';
+        
+        const instrLabel = document.getElementById('active-instrument-label');
+        if (instrLabel && data.instrument) instrLabel.textContent = data.instrument.replace('_', '/');
+
+        if (window.candleSeries) {
+            candleSeries.applyOptions({
+                priceLineVisible: false,
+                lastValueVisible: false,
+                countdownVisible: false,
+                title: ''
+            });
+        }
+        if (window.mainChart) {
+            mainChart.applyOptions({
+                priceScale: { lastValueVisible: false },
+                rightPriceScale: { lastValueVisible: false }
+            });
+        }
+    }
+
+    if (data.global_offset !== undefined) {
+        backtestState.globalOffset = data.global_offset;
+    }
+
+    const validCandles = (data.candles || []).filter(c => c && c.time);
+    if (validCandles.length > 0) {
+        let historyOnly = validCandles;
+        if (data.current_index !== undefined) {
+            const localFocus = data.current_index - (backtestState.globalOffset || 0);
+            if (localFocus >= 0 && localFocus < validCandles.length) {
+                historyOnly = validCandles.slice(0, localFocus + 1);
+            }
+        }
+
+        if (window.candleSeries) {
+            candleSeries.setData(historyOnly);
+            window.candleData = [...historyOnly];
+            // Sincronizar el guardián de tiempo para evitar bloqueo de reproducción
+            if (historyOnly.length > 0) {
+                window.lastCandleTime = historyOnly[historyOnly.length - 1].time;
+            }
+        }
+        
+        if (window.volumeSeries) {
+            volumeSeries.setData(historyOnly.map(c => ({
+                time: Number(c.time),
+                value: Number(c.volume || 0),
+                color: c.close >= c.open ? '#26a69a80' : '#ef535080'
+            })));
+        }
+    }
+    
+    // Indicadores (Puntos visibles en la ventana actual)
+    const source = data.all_indicators || data.indicators || {};
+    let localLimit = validCandles.length; // Por defecto todo el lote
+    
+    if (data.current_index !== undefined && data.global_offset !== undefined) {
+        localLimit = data.current_index - data.global_offset + 1;
+    }
+
+    const sliceInd = (arr) => {
+        if (!Array.isArray(arr)) return [];
+        // Si el lote ya viene cortado del backend, localLimit será igual al length.
+        // Si es un lote grande (Seek), el slice ocultará el futuro.
+        return arr.slice(0, Math.min(arr.length, localLimit));
+    };
+    
+    if (window.rsiSeries && source.rsi) rsiSeries.setData(sliceInd(source.rsi));
+    if (window.stochKSeries && source.stoch_k) stochKSeries.setData(sliceInd(source.stoch_k));
+    if (window.stochDSeries && source.stoch_d) stochDSeries.setData(sliceInd(source.stoch_d));
+    
+    // Actualizar info de cabecera siempre que tengamos info suficiente
+    const infoEl = document.getElementById('replay-instrument-info');
+    if (infoEl) {
+        const inst = data.instrument || backtestState.instrument || "Inst";
+        const tf = data.timeframe || data.granularity || backtestState.timeframe || "TF";
+        const total = data.total_candles || data.total || backtestState.totalCandles || 0;
+        const fromD = data.from_date || backtestState.fromDate || "?";
+        
+        // Solo actualizar si realmente tenemos algún dato relevante nuevo
+        if (data.instrument || data.from_date || data.timeframe) {
+            infoEl.textContent = `${inst} ${tf} · ${total} velas desde ${fromD}`;
+        }
+    }
+
+    if (data.drawings && typeof drawingState !== 'undefined') {
+        const hasLocal = drawingState.objects && drawingState.objects.length > 0;
+        const hasIncoming = data.drawings.length > 0;
+        
+        if (hasIncoming || (isInitial && !hasLocal)) {
+            drawingState.objects = data.drawings;
+            if (window.updateObjectTree) window.updateObjectTree();
+            if (window.redrawCanvas) window.redrawCanvas();
+        }
+    }
+
+    if (data.current_index !== undefined) {
+        backtestState.currentIndex = data.current_index;
+        backtestState.totalCandles = data.total || backtestState.totalCandles;
+        if (data.instrument) backtestState.instrument = data.instrument;
+        if (data.timeframe || data.granularity) backtestState.timeframe = data.timeframe || data.granularity;
+        if (data.from_date) backtestState.fromDate = data.from_date;
+        updateTimelineSlider();
+        
+        setTimeout(() => {
+            centerChartOnIndex(data.current_index);
+            if (window.redrawCanvas) window.redrawCanvas();
+        }, 150);
+    }
+
+    updateBacktestUI(data.balance, data.open_trades, data.closed_trades, data.stats, data.pending_trades);
+    
+    if (isInitial && window.showNotification) {
+        showNotification('Sesión cargada correctamente', 'success');
+    }
+}
+

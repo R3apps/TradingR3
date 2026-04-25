@@ -41,6 +41,10 @@ function handleBacktestMessage(data) {
         if (window.handleTradeOpened) handleTradeOpened(data);
         return true;
     }
+    if (type === 'trade_cancelled') {
+        if (window.handleTradeCancelled) handleTradeCancelled(data);
+        return true;
+    }
     if (type === 'trade_closed' || type === 'trade_sl_hit' || type === 'trade_tp_hit') {
         if (window.handleTradeClosed) handleTradeClosed(data);
         return true;

@@ -223,3 +223,51 @@
   padding-bottom: 10px;
   margin-bottom: 10px;
 }
+
+.order-type-selector {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    background: #1e222d;
+    padding: 2px;
+    border-radius: 4px;
+}
+
+.order-type-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #787B86;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+
+.order-type-btn.active {
+    background: #2a2e39;
+    color: white;
+}
+
+.pending-order-item {
+    background: rgba(255,255,255,0.02);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.cancel-pending-btn {
+    background: none;
+    border: none;
+    color: #ef5350;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 4px;
+}

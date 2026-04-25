@@ -93,6 +93,7 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
                     'instrument': instrument,
                     'timeframe': granularity,
                     'balance': initial_balance,
+                    'from_date': from_date,
                     'target_date': target_date_str
                 })
                 # 6. Enviar lote inicial con ventana de 500 velas (lazy scroll)
@@ -103,14 +104,15 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
                     "type":             "replay_batch",
                     "candles":          window_data["candles"],
                     "indicators":       window_data["indicators"],
+                    "all_indicators":   window_data["indicators"], # Compatibilidad con nombres en frontend
                     "target_date":      target_date_str,
-                    "current_index":    window_data["local_focus"],
-                    "global_index":     start_idx,
+                    "current_index":    start_idx, # Global index
                     "global_offset":    window_data["global_offset"],
                     "total":            len(all_candles),
                     "has_more_history": window_data["has_more_history"],
                     "balance":          replay_engine.state.balance,
                     "open_trades":      [t.__dict__ for t in replay_engine.state.open_trades],
+                    "pending_trades":   [t.__dict__ for t in replay_engine.state.pending_trades],
                     "closed_trades":    [t.__dict__ for t in replay_engine.state.closed_trades],
                 })
 
@@ -192,14 +194,18 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
                     "type":             "replay_batch",
                     "candles":          window_data["candles"],
                     "indicators":       window_data["indicators"],
+                    "all_indicators":   window_data["indicators"],
                     "target_date":      current_date_str,
-                    "current_index":    window_data["local_focus"],
-                    "global_index":     idx,
+                    "from_date":        buffer_date,
+                    "instrument":       instrument,
+                    "timeframe":        new_tf,
+                    "current_index":    idx, # Absolute index
                     "global_offset":    window_data["global_offset"],
                     "total":            len(candles_list),
                     "has_more_history": window_data["has_more_history"],
                     "balance":          current_balance,
                     "open_trades":      [t.__dict__ for t in replay_engine.state.open_trades],
+                    "pending_trades":   [t.__dict__ for t in replay_engine.state.pending_trades],
                     "closed_trades":    [t.__dict__ for t in replay_engine.state.closed_trades],
                     "is_tf_change":     True,
                 })
@@ -273,6 +279,7 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
                         'total': len(replay_engine.state.all_candles),
                         'balance': replay_engine.state.balance,
                         'open_trades': [t.__dict__ for t in replay_engine.state.open_trades],
+                        'pending_trades': [t.__dict__ for t in replay_engine.state.pending_trades],
                         'closed_trades': [t.__dict__ for t in replay_engine.state.closed_trades],
                         'stats': replay_engine.get_statistics()
                     })
@@ -297,6 +304,7 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
                     'current_index': new_idx,
                     'total': len(replay_engine.state.all_candles),
                     'open_trades': [t.__dict__ for t in replay_engine.state.open_trades],
+                    'pending_trades': [t.__dict__ for t in replay_engine.state.pending_trades],
                     'closed_trades': [t.__dict__ for t in replay_engine.state.closed_trades],
                     'balance': replay_engine.state.balance,
                     'stats': replay_engine.get_statistics()
@@ -345,6 +353,7 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
                 'current_index': replay_engine.state.current_index,
                 'total': len(replay_engine.state.all_candles),
                 'open_trades': [t.__dict__ for t in replay_engine.state.open_trades],
+                'pending_trades': [t.__dict__ for t in replay_engine.state.pending_trades],
                 'closed_trades': [t.__dict__ for t in replay_engine.state.closed_trades],
                 'balance': replay_engine.state.balance,
                 'stats': replay_engine.get_statistics()
@@ -364,8 +373,21 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
                 'type': 'trade_opened',
                 'trade': trade.__dict__,
                 'balance': replay_engine.state.balance,
+                'open_trades': [t.__dict__ for t in replay_engine.state.open_trades],
+                'pending_trades': [t.__dict__ for t in replay_engine.state.pending_trades],
+                'closed_trades': [t.__dict__ for t in replay_engine.state.closed_trades],
                 'stats': replay_engine.get_statistics()
             })
+
+    elif msg_type == 'trade_cancel_pending':
+        if replay_engine.state:
+            success = replay_engine.cancel_pending_trade(data.get('trade_id'))
+            if success:
+                await safe_send({
+                    'type': 'trade_cancelled',
+                    'trade_id': data.get('trade_id'),
+                    'pending_trades': [t.__dict__ for t in replay_engine.state.pending_trades]
+                })
 
     elif msg_type == 'trade_close':
         if replay_engine.state:
@@ -375,6 +397,9 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
                     'type': 'trade_closed',
                     'trade': trade.__dict__,
                     'balance': replay_engine.state.balance,
+                    'open_trades': [t.__dict__ for t in replay_engine.state.open_trades],
+                    'pending_trades': [t.__dict__ for t in replay_engine.state.pending_trades],
+                    'closed_trades': [t.__dict__ for t in replay_engine.state.closed_trades],
                     'stats': replay_engine.get_statistics()
                 })
 
@@ -438,6 +463,7 @@ async def handle_backtest_message(data, websocket, state, replay_engine, safe_se
             'instrument': replay_engine.state.instrument,
             'granularity': replay_engine.state.granularity,
             'open_trades': [t.__dict__ for t in replay_engine.state.open_trades],
+            'pending_trades': [t.__dict__ for t in replay_engine.state.pending_trades],
             'closed_trades': [t.__dict__ for t in replay_engine.state.closed_trades],
             'initial_balance': replay_engine.state.initial_balance,
             'stats': replay_engine.get_statistics(),

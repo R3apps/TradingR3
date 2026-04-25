@@ -47,6 +47,7 @@ class ReplayState:
     open_trades: List[Trade] = field(default_factory=list)
     closed_trades: List[Trade] = field(default_factory=list)
     future_trades: List[Trade] = field(default_factory=list)
+    pending_trades: List[Trade] = field(default_factory=list)
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     from_date: str = ""
     drawings: List[Dict] = field(default_factory=list)
@@ -95,6 +96,7 @@ class ReplayEngine:
             open_trades=[],
             closed_trades=[],
             future_trades=[],
+            pending_trades=[],
             created_at=datetime.now(timezone.utc).isoformat(),
             from_date=from_date or start_date
         )
@@ -235,7 +237,9 @@ class ReplayEngine:
             candle = self.get_current_candle()
             # 1. Restaurar future_trades que correspondan a esta vela
             self._restore_future_trades(candle)
-            # 2. Verificar SL/TP de trades abiertos en esta vela
+            # 2. Verificar si se activan órdenes pendientes
+            self._check_pending_orders(candle)
+            # 3. Verificar SL/TP de trades abiertos en esta vela
             closed_in_step = self._check_sl_tp(candle)
             if closed_in_step:
                 all_closed.extend(closed_in_step)
@@ -271,26 +275,50 @@ class ReplayEngine:
             self.step_forward(diff)
 
     def open_trade(self, direction, lot_size, stop_loss=None, take_profit=None, entry_price=None, risk_percent=0.0) -> Trade:
-        """Abre un trade. Si no se especifica entry_price, usa el cierre de la vela actual."""
+        """Abre un trade o lo añade a pendientes si el entry_price no se ha tocado."""
         candle = self.get_current_candle()
-        final_entry = entry_price if entry_price is not None else candle['close']
+        
+        # Si no hay entry_price, es mercado inmediato
+        if entry_price is None:
+            entry_price = candle['close']
+            is_pending = False
+        else:
+            # Verificar si el precio de entrada está dentro del rango de la vela actual
+            if candle['low'] <= entry_price <= candle['high']:
+                is_pending = False
+            else:
+                is_pending = True
         
         trade = Trade(
             id=str(uuid.uuid4())[:8],
             instrument=self.state.instrument,
             direction=direction,
             entry_time=candle['time'],
-            entry_price=final_entry,
+            entry_price=entry_price,
             lot_size=lot_size,
             stop_loss=stop_loss,
             take_profit=take_profit,
-            status='open',
+            status='pending' if is_pending else 'open',
             result=None,
             risk_percent=risk_percent,
             notes=''
         )
-        self.state.open_trades.append(trade)
+        
+        if is_pending:
+            self.state.pending_trades.append(trade)
+        else:
+            self.state.open_trades.append(trade)
+            
         return trade
+
+    def cancel_pending_trade(self, trade_id) -> bool:
+        """Elimina una orden pendiente."""
+        if not self.state: return False
+        for i, t in enumerate(self.state.pending_trades):
+            if t.id == trade_id:
+                self.state.pending_trades.pop(i)
+                return True
+        return False
 
     def close_trade(self, trade_id) -> Optional[Trade]:
         """Cierra un trade manualmente al precio actual."""
@@ -314,8 +342,24 @@ class ReplayEngine:
                 return closed_trade
         return None
 
+    def _check_pending_orders(self, candle):
+        """Verifica si el precio de la vela actual activa alguna orden pendiente."""
+        if not self.state: return
+        
+        activated = []
+        for trade in self.state.pending_trades:
+            # Si el precio de entrada está entre Low y High de esta vela, se activa
+            if candle['low'] <= trade.entry_price <= candle['high']:
+                trade.status = 'open'
+                trade.entry_time = candle['time'] # Actualizar al tiempo real de ejecución
+                activated.append(trade)
+        
+        for trade in activated:
+            self.state.pending_trades.remove(trade)
+            self.state.open_trades.append(trade)
+
     def _check_sl_tp(self, candle):
-        """Para cada trade abierto, verifica si la vela tocó SL o TP."""
+        """Para cada trade abierto, verifica si la vela tocó SL o si TP."""
         if not self.state:
             return
             
@@ -672,13 +716,20 @@ class ReplayEngine:
             if not revealed:
                 break
                 
-            ind = self.get_current_indicators()
+            # El global_offset para el frontend se basa en el inicio de la "memoria" del gráfico
+            current_window_size = 500
+            global_offset = max(0, self.state.current_index - current_window_size)
+
             msg = {
                 'type': 'replay_candle' if len(revealed) == 1 else 'replay_batch',
                 'current_index': self.state.current_index,
+                'global_offset': global_offset,
                 'total': len(self.state.all_candles),
                 'balance': self.state.balance,
+                'instrument': self.state.instrument,
+                'timeframe': self.state.granularity,
                 'open_trades': [t.__dict__ for t in self.state.open_trades],
+                'pending_trades': [t.__dict__ for t in self.state.pending_trades],
                 'closed_trades': [t.__dict__ for t in self.state.closed_trades],
                 'stats': self.get_statistics()
             }
@@ -692,7 +743,33 @@ class ReplayEngine:
                 }
             else:
                 msg['candles'] = revealed
-                msg['indicators'] = ind
+                
+                # Optimización Crítica: Solo extraer indicadores para el lote actual (evita enviar 40k puntos)
+                start_idx = self.state.current_index - len(revealed) + 1
+                end_idx = self.state.current_index + 1
+                
+                def get_batch_ind(key):
+                    if not self.state or "raw" not in self.state.all_indicators:
+                        return []
+                    raw_series = self.state.all_indicators["raw"].get(key, [])
+                    result = []
+                    for i in range(start_idx, end_idx):
+                        if 0 <= i < len(raw_series) and raw_series[i] is not None:
+                            result.append({
+                                "time": self.state.all_candles[i]["time"],
+                                "value": raw_series[i]
+                            })
+                    return result
+
+                batch_indicators = {
+                    'rsi': get_batch_ind('rsi'),
+                    'stoch_k': get_batch_ind('stoch_k'),
+                    'stoch_d': get_batch_ind('stoch_d')
+                }
+                
+                msg['indicators'] = batch_indicators
+                msg['all_indicators'] = batch_indicators
+
                 
             await send_callback(msg)
             
@@ -703,6 +780,9 @@ class ReplayEngine:
                     'type': type_hit,
                     'trade': t.__dict__,
                     'balance': self.state.balance,
+                    'open_trades': [tr.__dict__ for tr in self.state.open_trades],
+                    'pending_trades': [tr.__dict__ for tr in self.state.pending_trades],
+                    'closed_trades': [tr.__dict__ for tr in self.state.closed_trades],
                     'stats': self.get_statistics()
                 })
 
