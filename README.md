@@ -21,8 +21,16 @@ Para disfrutar de la mejor experiencia sin complicaciones:
 3. Descomprime la carpeta en cualquier ubicación (Escritorio, Documentos, etc.).
 4. Ejecuta el archivo `TradingR3.exe` para iniciar la aplicación.
 
-> **Nota**: Al ser una versión portable, todos tus datos (configuración, backtests y dibujos) se guardarán automáticamente dentro de la propia carpeta del programa. No requiere permisos de administrador.
 
+ **Nota**: Al ser una versión portable, todos tus datos (configuración, backtests y dibujos) se guardarán automáticamente dentro de la propia carpeta del programa. No requiere permisos de administrador.
+
+#### 🛠️ Requisitos Previos (Solución de errores al abrir)
+Si el programa no se abre o te pide instalar componentes repetidamente, asegúrate de tener instalados estos dos elementos oficiales de Microsoft:
+
+1. **.NET Desktop Runtime 6.0 (x64)**: [Descargar aquí](https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-desktop-6.0.36-windows-x64-installer)  
+   *(Es vital instalar la versión **DESKTOP**, no la versión estándar o de consola).*
+2. **WebView2 Runtime**: [Descargar aquí](https://go.microsoft.com/fwlink/p/?LinkId=2124703)  
+   *(Necesario para que los gráficos se carguen correctamente).*
 ---
 
 ### 🐧 Para Usuarios de Linux
